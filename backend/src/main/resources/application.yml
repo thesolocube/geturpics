@@ -1,0 +1,41 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: eventface-backend
+
+  datasource:
+    # Par defaut 5433 pour correspondre au port hote Docker (ou 5432 si DB locale)
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5433}/eventface_db
+    username: ${DB_USER:eventface_user}
+    password: ${DB_PASSWORD:eventface_password}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+    show-sql: false
+
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USER:rabbitmq}
+    password: ${RABBITMQ_PASS:rabbitmqpassword}
+
+minio:
+  endpoint: ${MINIO_ENDPOINT:http://localhost:9000}
+  access-key: ${MINIO_ACCESS_KEY:minioadmin}
+  secret-key: ${MINIO_SECRET_KEY:minioadminpassword}
+  bucket: ${MINIO_BUCKET:photos}
+  expiry-minutes: 15
+
+app:
+  rabbitmq:
+    queue: photo.process.queue
+    exchange: photo.exchange
+    routing-key: photo.process.routingkey

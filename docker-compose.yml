@@ -1,0 +1,74 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: eventface-postgres
+    restart: always
+    environment:
+      POSTGRES_DB: eventface_db
+      POSTGRES_USER: eventface_user
+      POSTGRES_PASSWORD: eventface_password
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    networks:
+      - eventface-network
+
+  minio:
+    image: pgsty/minio:latest
+    container_name: eventface-minio
+    restart: always
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadminpassword
+      MINIO_SERVER_URL: http://localhost:9000
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+    networks:
+      - eventface-network
+
+  minio-init:
+    image: pgsty/mc:latest
+    container_name: eventface-minio-init
+    depends_on:
+      - minio
+    entrypoint: >
+      /bin/sh -c "
+      sleep 3;
+      /usr/bin/mc alias set localminio http://minio:9000 minioadmin minioadminpassword;
+      /usr/bin/mc mb --ignore-existing localminio/photos;
+      /usr/bin/mc anonymous set download localminio/photos/thumbnails;
+      exit 0;
+      "
+    networks:
+      - eventface-network
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: eventface-rabbitmq
+    restart: always
+    environment:
+      RABBITMQ_DEFAULT_USER: rabbitmq
+      RABBITMQ_DEFAULT_PASS: rabbitmqpassword
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - eventface-network
+
+volumes:
+  postgres_data:
+  minio_data:
+  rabbitmq_data:
+
+networks:
+  eventface-network:
+    driver: bridge
+
