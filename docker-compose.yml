@@ -63,6 +63,37 @@ services:
     networks:
       - eventface-network
 
+  worker:
+    build:
+      context: ./worker
+      dockerfile: Dockerfile
+    container_name: eventface-worker
+    restart: always
+    environment:
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: rabbitmq
+      RABBITMQ_PASSWORD: rabbitmqpassword
+      RABBITMQ_QUEUE: photo.process.queue
+      RABBITMQ_EXCHANGE: photo.exchange
+      RABBITMQ_ROUTING_KEY: photo.process.routingkey
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadminpassword
+      MINIO_BUCKET: photos
+      MINIO_SECURE: "false"
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: eventface_db
+      DB_USER: eventface_user
+      DB_PASSWORD: eventface_password
+    depends_on:
+      - rabbitmq
+      - postgres
+      - minio
+    networks:
+      - eventface-network
+
 volumes:
   postgres_data:
   minio_data:
@@ -71,4 +102,3 @@ volumes:
 networks:
   eventface-network:
     driver: bridge
-
