@@ -18,7 +18,7 @@
     <description>EventFace backend API - Platform for Event Photo Management</description>
 
     <properties>
-        <java.version>21</java.version>
+        <java.version>17</java.version>
         <minio.version>8.5.12</minio.version>
     </properties>
 
