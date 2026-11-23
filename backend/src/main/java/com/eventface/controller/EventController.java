@@ -28,6 +28,24 @@ public class EventController {
     }
 
     /**
+     * Liste tous les événements (pour le dashboard du photographe).
+     * GET /api/v1/events
+     */
+    @GetMapping
+    public ResponseEntity<java.util.List<EventResponse>> getAllEvents() {
+        return ResponseEntity.ok(eventService.getAllEvents());
+    }
+
+    /**
+     * Récupère les détails d'un événement par son UUID.
+     * GET /api/v1/events/{id}
+     */
+    @GetMapping("/{id}")
+    public ResponseEntity<EventResponse> getEventById(@PathVariable("id") java.util.UUID id) {
+        return ResponseEntity.ok(eventService.getEventById(id));
+    }
+
+    /**
      * Valide et récupère un événement à partir de son code d'accès invité (ex: GALA26).
      * GET /api/v1/events/access?code=...
      */

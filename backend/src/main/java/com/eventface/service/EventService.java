@@ -47,6 +47,24 @@ public class EventService {
     }
 
     /**
+     * Récupère la liste de tous les événements créés (pour l'espace photographe).
+     */
+    @Transactional(readOnly = true)
+    public java.util.List<EventResponse> getAllEvents() {
+        return eventRepository.findAll().stream()
+                .map(EventResponse::fromEntity)
+                .toList();
+    }
+
+    /**
+     * Recherche un événement par son identifiant UUID et renvoie le DTO.
+     */
+    @Transactional(readOnly = true)
+    public EventResponse getEventById(UUID eventId) {
+        return EventResponse.fromEntity(getEventEntityById(eventId));
+    }
+
+    /**
      * Recherche et valide un événement via son code d'accès invité.
      */
     @Transactional(readOnly = true)

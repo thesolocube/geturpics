@@ -1,5 +1,6 @@
 package com.eventface.service;
 
+import io.minio.GetObjectArgs;
 import io.minio.GetPresignedObjectUrlArgs;
 import io.minio.MinioClient;
 import io.minio.http.Method;
@@ -8,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.io.InputStream;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
@@ -72,6 +74,23 @@ public class MinioService {
         } catch (Exception e) {
             log.error("Erreur lors de la génération de l'URL pré-signée GET pour la clé {}", objectKey, e);
             throw new RuntimeException("Impossible de générer l'URL de téléchargement MinIO", e);
+        }
+    }
+
+    /**
+     * Récupère le flux binaire brut d'un objet stocké dans MinIO (pour le streaming ZIP ou téléchargement direct).
+     */
+    public InputStream getObjectInputStream(String objectKey) {
+        try {
+            return minioClient.getObject(
+                    GetObjectArgs.builder()
+                            .bucket(bucketName)
+                            .object(objectKey)
+                            .build()
+            );
+        } catch (Exception e) {
+            log.error("Erreur lors de la lecture du flux MinIO pour la clé {}", objectKey, e);
+            throw new RuntimeException("Impossible de lire l'objet dans MinIO: " + objectKey, e);
         }
     }
 }

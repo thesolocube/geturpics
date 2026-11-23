@@ -9,6 +9,7 @@ from services.minio_service import MinioStorageService
 from services.image_processor import ImageProcessor
 from services.face_service import FaceEngine
 from services.db_service import DatabaseService
+from services.api_server import start_api_server
 
 # Configuration du logging
 logging.basicConfig(
@@ -27,6 +28,8 @@ class PhotoProcessingWorker:
         self.connection = None
         self.channel = None
         self.is_running = True
+        # Démarrage de l'API HTTP d'extraction d'embeddings pour la recherche par selfie
+        self.http_server = start_api_server(self.face_engine, port=5001)
 
     def connect_rabbitmq(self):
         """Tente de se connecter à RabbitMQ avec réessais en cas d'échec."""
@@ -147,6 +150,8 @@ class PhotoProcessingWorker:
         logger.info("Signal d'arrêt reçu, fermeture du worker...")
         self.is_running = False
         try:
+            if hasattr(self, 'http_server') and self.http_server:
+                self.http_server.shutdown()
             if self.channel and self.channel.is_open:
                 self.channel.stop_consuming()
             if self.connection and self.connection.is_open:

@@ -32,7 +32,11 @@ minio:
   access-key: ${MINIO_ACCESS_KEY:minioadmin}
   secret-key: ${MINIO_SECRET_KEY:minioadminpassword}
   bucket: ${MINIO_BUCKET:photos}
-  expiry-minutes: 15
+  expiry-minutes: 60
+
+ai:
+  worker:
+    url: ${AI_WORKER_URL:http://localhost:5001}
 
 app:
   rabbitmq:
