@@ -22,8 +22,14 @@ public class Photo {
     public static final String STATUS_FAILED = "FAILED";
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
+
+    @PrePersist
+    public void ensureId() {
+        if (this.id == null) {
+            this.id = UUID.randomUUID();
+        }
+    }
 
     @Column(name = "event_id", nullable = false)
     private UUID eventId;

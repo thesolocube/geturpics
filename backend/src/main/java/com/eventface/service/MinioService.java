@@ -4,8 +4,8 @@ import io.minio.GetObjectArgs;
 import io.minio.GetPresignedObjectUrlArgs;
 import io.minio.MinioClient;
 import io.minio.http.Method;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -14,10 +14,10 @@ import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class MinioService {
 
     private final MinioClient minioClient;
+    private final MinioClient publicMinioClient;
 
     @Value("${minio.bucket:photos}")
     private String bucketName;
@@ -25,11 +25,16 @@ public class MinioService {
     @Value("${minio.expiry-minutes:15}")
     private int defaultExpiryMinutes;
 
+    public MinioService(
+            MinioClient minioClient,
+            @Qualifier("publicMinioClient") MinioClient publicMinioClient
+    ) {
+        this.minioClient = minioClient;
+        this.publicMinioClient = publicMinioClient;
+    }
+
     /**
      * Génère une URL pré-signée sécurisée PUT pour l'upload direct d'une photo vers MinIO (durée 15 min par défaut).
-     *
-     * @param objectKey chemin/clé unique de stockage dans le bucket
-     * @return URL pré-signée en méthode PUT
      */
     public String generatePresignedUploadUrl(String objectKey) {
         return generatePresignedUploadUrl(objectKey, defaultExpiryMinutes);
@@ -40,12 +45,13 @@ public class MinioService {
      */
     public String generatePresignedUploadUrl(String objectKey, int expiryMinutes) {
         try {
-            return minioClient.getPresignedObjectUrl(
+            return publicMinioClient.getPresignedObjectUrl(
                     GetPresignedObjectUrlArgs.builder()
                             .method(Method.PUT)
                             .bucket(bucketName)
                             .object(objectKey)
                             .expiry(expiryMinutes, TimeUnit.MINUTES)
+                            .region("us-east-1")
                             .build()
             );
         } catch (Exception e) {
@@ -56,19 +62,16 @@ public class MinioService {
 
     /**
      * Génère une URL pré-signée sécurisée GET pour la consultation ou le téléchargement d'un objet.
-     *
-     * @param objectKey chemin/clé de l'objet dans le bucket
-     * @param expiryMinutes durée de validité du lien en minutes
-     * @return URL pré-signée en méthode GET
      */
     public String generatePresignedDownloadUrl(String objectKey, int expiryMinutes) {
         try {
-            return minioClient.getPresignedObjectUrl(
+            return publicMinioClient.getPresignedObjectUrl(
                     GetPresignedObjectUrlArgs.builder()
                             .method(Method.GET)
                             .bucket(bucketName)
                             .object(objectKey)
                             .expiry(expiryMinutes, TimeUnit.MINUTES)
+                            .region("us-east-1")
                             .build()
             );
         } catch (Exception e) {

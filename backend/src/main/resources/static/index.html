@@ -1,310 +1,483 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>EventFace - Partage & Reconnaissance Faciale pour Événements</title>
-  <link rel="stylesheet" href="css/style.css">
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220%22%20%22100%22%20%22100%22><text y=%22.9em%22 font-size=%2290%22>📸</text></svg>">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EventFace — Vos photos d'événement, retrouvées par IA</title>
+
+  <!-- Google Fonts — Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+
+  <!-- Favicon — camera emoji SVG data URI -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📸</text></svg>" />
+
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
 
-  <!-- NAVBAR -->
+  <!-- ============================================================
+       TOAST CONTAINER — fixed top-right notification area
+       ============================================================ -->
+  <div id="toast-container" class="toast-container"></div>
+
+
+  <!-- ============================================================
+       NAVBAR
+       ============================================================ -->
   <header class="navbar">
+    <!-- Brand -->
     <div class="brand" onclick="window.location.reload()">
       <span class="brand-icon">📸</span>
       <span>EventFace</span>
     </div>
 
-    <div class="nav-tabs">
-      <button class="nav-tab active" data-tab="guest">🎉 Espace Invité</button>
-      <button class="nav-tab" data-tab="photographer">📷 Espace Photographe</button>
-    </div>
+    <!-- Tab navigation -->
+    <nav class="nav-tabs">
+      <button class="nav-tab active" data-tab="guest">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M5.8 11.3L2 22l10.7-3.8"/>
+          <path d="M4 3h.01"/>
+          <path d="M22 8h.01"/>
+          <path d="M15 2h.01"/>
+          <path d="M22 20h.01"/>
+          <path d="M22 2l-2.24.75a2.9 2.9 0 00-1.96 3.12v0L18.4 9l-2.53-.75a2.9 2.9 0 00-3.12 1.96v0L12 12"/>
+          <path d="M9 7.5l3 9M12.98 16.5l3-9"/>
+        </svg>
+        Invité
+      </button>
+      <button class="nav-tab" data-tab="photographer">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/>
+          <circle cx="12" cy="13" r="4"/>
+        </svg>
+        Photographe
+      </button>
+    </nav>
 
+    <!-- API connection status -->
     <div id="api-status" class="status-badge">
-      <span class="status-dot"></span> Vérification...
+      <span class="status-dot"></span>
+      <span>Connexion...</span>
     </div>
   </header>
 
-  <!-- CONTENU PRINCIPAL -->
+
+  <!-- ============================================================
+       MAIN CONTENT
+       ============================================================ -->
   <main class="container">
 
-    <!-- ========================================== -->
-    <!-- 1. VUE INVITÉ (PAR DÉFAUT) -->
-    <!-- ========================================== -->
+    <!-- ==========================================================
+         GUEST VIEW
+         ========================================================== -->
     <section id="guest-view">
-      
-      <!-- ÉCRAN D'ACCUEIL INVITÉ (Saisie du Code) -->
-      <div id="guest-welcome-screen" class="card" style="max-width:560px; margin:3rem auto; text-align:center;">
-        <div style="font-size:3.5rem; margin-bottom:1rem;">🎉</div>
-        <h1 style="font-size:1.8rem; font-weight:800; margin-bottom:0.75rem;">Bienvenue sur EventFace</h1>
-        <p style="color:var(--text-secondary); margin-bottom:2rem; line-height:1.5;">
-          Retrouvez instantanément vos photos de l'événement grâce à notre intelligence artificielle de reconnaissance faciale.
-        </p>
 
-        <form id="guest-code-form">
-          <div class="form-group" style="margin-bottom:1.5rem;">
-            <input 
-              type="text" 
-              id="guest-code-input" 
-              class="form-input" 
-              placeholder="Ex: GALA26 ou EVT9B1" 
-              style="text-align:center; font-size:1.4rem; letter-spacing:4px; text-transform:uppercase; font-weight:700; height:60px;" 
-              maxlength="8" 
-              required
-              autofocus
-            />
-          </div>
-          <button type="submit" class="btn btn-primary" style="width:100%; height:50px; font-size:1.05rem; justify-content:center;">
-            🚀 Accéder à l'Album
-          </button>
-        </form>
+      <!-- ── Welcome Screen ── -->
+      <div id="guest-welcome-screen" class="hero">
+        <div class="hero-content">
+          <div class="hero-badge">Intelligence Artificielle</div>
 
-        <div id="guest-recent-events" style="margin-top:2rem; text-align:left;"></div>
+          <h1 class="hero-title">
+            Retrouvez vos photos<br>en un <span class="text-gradient">selfie</span>
+          </h1>
+
+          <p class="hero-subtitle">
+            Notre IA de reconnaissance faciale analyse vos photos d'événement
+            et retrouve instantanément celles où vous apparaissez.
+          </p>
+
+          <!-- Access code form -->
+          <form id="guest-code-form" class="code-form">
+            <div class="code-input-wrapper">
+              <input
+                type="text"
+                id="guest-code-input"
+                class="form-input form-input-code"
+                placeholder="CODE D'ACCÈS"
+                maxlength="8"
+                required
+                autofocus
+                autocomplete="off"
+                spellcheck="false"
+              />
+              <button type="submit" class="btn btn-primary btn-lg">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M5 12h14M12 5l7 7-7 7"/>
+                </svg>
+                Accéder
+              </button>
+            </div>
+          </form>
+
+          <!-- Recent events (populated by JS) -->
+          <div id="guest-recent-events" class="recent-events"></div>
+        </div>
       </div>
 
-      <!-- ÉCRAN GALERIE INVITÉ -->
+      <!-- ── Gallery Screen (hidden by default) ── -->
       <div id="guest-gallery-screen" style="display:none;">
-        
-        <!-- En-tête de l'événement -->
-        <div class="card" style="margin-bottom:1.5rem;">
-          <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:1rem;">
+
+        <!-- Event Header Card -->
+        <div class="card event-header-card">
+          <div class="event-header-info">
             <div>
-              <div style="display:flex; align-items:center; gap:0.75rem; margin-bottom:0.5rem;">
-                <h1 id="guest-event-title" style="font-size:1.6rem; font-weight:800;">Titre de l'événement</h1>
+              <h1 id="guest-event-title" class="event-title">Événement</h1>
+              <div class="event-meta">
                 <span id="guest-event-code" class="event-code-badge">CODE</span>
+                <span id="guest-event-date" class="event-date">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="4" width="18" height="18" rx="2"/>
+                    <path d="M16 2v4M8 2v4M3 10h18"/>
+                  </svg>
+                  Date
+                </span>
               </div>
-              <p id="guest-event-date" style="color:var(--text-secondary); font-size:0.9rem;">📅 Date</p>
             </div>
-            
-            <div style="display:flex; gap:0.75rem; flex-wrap:wrap;">
+            <div class="event-actions">
               <button class="btn btn-primary" onclick="openSelfieModal()">
-                ✨ Trouver mes photos (Selfie IA)
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M15 8h.01M12 21a9 9 0 110-18 9 9 0 010 18z"/>
+                  <path d="M9 10a3 3 0 106 0"/>
+                </svg>
+                Trouver mes photos
               </button>
               <button class="btn btn-secondary" onclick="downloadAllZip()">
-                📥 Tout télécharger (ZIP)
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+                </svg>
+                Télécharger tout
               </button>
-              <button class="btn btn-secondary" onclick="exitGuestEvent()">
-                🚪 Quitter l'événement
+              <button class="btn btn-secondary btn-icon" onclick="exitGuestEvent()" title="Quitter">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/>
+                </svg>
               </button>
             </div>
           </div>
         </div>
 
-        <!-- Bannière de filtre de recherche active -->
-        <div id="search-filter-banner" class="card" style="display:none; background:rgba(16, 185, 129, 0.15); border-color:#10b981; padding:1rem 1.5rem; margin-bottom:1.5rem; justify-content:space-between; align-items:center;">
-          <div style="display:flex; align-items:center; gap:0.75rem;">
-            <span style="font-size:1.5rem;">🎯</span>
+        <!-- Search Filter Banner (hidden) -->
+        <div id="search-filter-banner" class="search-banner" style="display:none;">
+          <div class="search-banner-content">
+            <div class="search-banner-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 11.08V12a10 10 0 11-5.93-9.14"/>
+                <path d="M22 4L12 14.01l-3-3"/>
+              </svg>
+            </div>
             <div>
-              <h4 id="search-matches-text" style="color:#10b981; font-weight:700;">Recherche faciale active</h4>
-              <p style="color:var(--text-secondary); font-size:0.85rem;">Seules les photos où votre visage a été reconnu sont affichées.</p>
+              <h4 id="search-matches-text">Recherche active</h4>
+              <p>Seules les photos où votre visage a été détecté sont affichées.</p>
             </div>
           </div>
           <button class="btn btn-secondary btn-sm" onclick="resetGuestSearch()">
-            ✖️ Voir tout l'album
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 6L6 18M6 6l12 12"/>
+            </svg>
+            Voir tout
           </button>
         </div>
 
-        <!-- Barre d'action de sélection multiple -->
-        <div id="selection-action-bar" class="card" style="display:none; position:sticky; top:80px; z-index:90; padding:0.75rem 1.5rem; margin-bottom:1.5rem; background:rgba(30, 41, 59, 0.95); justify-content:space-between; align-items:center;">
-          <div style="display:flex; align-items:center; gap:1rem;">
-            <span id="selected-count-label" style="font-weight:700; color:#a5b4fc;">0 sélectionnée(s)</span>
-            <button class="btn btn-secondary btn-sm" onclick="selectAllPhotos()">Tout cocher</button>
+        <!-- Selection Action Bar (hidden) -->
+        <div id="selection-action-bar" class="selection-bar" style="display:none;">
+          <div class="selection-info">
+            <span id="selected-count-label" class="selection-count">0 sélectionnée(s)</span>
+            <button class="btn btn-secondary btn-sm" onclick="selectAllPhotos()">Tout sélectionner</button>
             <button class="btn btn-secondary btn-sm" onclick="clearSelection()">Désélectionner</button>
           </div>
           <button id="btn-download-selected" class="btn btn-success btn-sm" onclick="downloadSelectedZip()">
-            📦 Télécharger la sélection (ZIP)
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+            </svg>
+            Télécharger la sélection
           </button>
         </div>
 
-        <!-- Grille des photos -->
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
-          <span style="color:var(--text-secondary); font-size:0.9rem;" id="guest-photo-counter">0 photo(s)</span>
+        <!-- Photo Counter -->
+        <div class="gallery-header">
+          <span id="guest-photo-counter" class="photo-counter">0 photo(s)</span>
         </div>
-        <div id="guest-photos-grid" class="gallery-grid"></div>
 
+        <!-- Photo Grid -->
+        <div id="guest-photos-grid" class="gallery-grid"></div>
       </div>
 
     </section>
 
 
-    <!-- ========================================== -->
-    <!-- 2. VUE PHOTOGRAPHE -->
-    <!-- ========================================== -->
+    <!-- ==========================================================
+         PHOTOGRAPHER VIEW
+         ========================================================== -->
     <section id="photographer-view" style="display:none;">
-      
-      <!-- Création d'événement -->
+
+      <!-- ── Create Event Card ── -->
       <div class="card">
         <div class="card-header">
-          <h2 class="card-title">➕ Créer un nouvel événement</h2>
+          <h2 class="card-title">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M12 8v8M8 12h8"/>
+            </svg>
+            Nouvel événement
+          </h2>
         </div>
-        <form id="create-event-form" style="display:grid; grid-template-columns: 1fr 1fr; gap:1rem;">
-          <div class="form-group" style="grid-column:1;">
-            <label class="form-label" for="event-title">Titre de l'événement *</label>
-            <input type="text" id="event-title" class="form-input" placeholder="Ex: Mariage Sophie & Marc, Gala 2026..." required />
+        <form id="create-event-form" class="create-event-form">
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="event-title">Titre *</label>
+              <input type="text" id="event-title" class="form-input" placeholder="Mariage Sophie &amp; Marc, Gala 2026..." required />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="event-date">Date *</label>
+              <input type="date" id="event-date" class="form-input" required />
+            </div>
           </div>
-          <div class="form-group" style="grid-column:2;">
-            <label class="form-label" for="event-date">Date de l'événement *</label>
-            <input type="date" id="event-date" class="form-input" required />
+          <div class="form-group">
+            <label class="form-label" for="event-description">Description</label>
+            <textarea id="event-description" class="form-textarea" rows="2" placeholder="Informations complémentaires..."></textarea>
           </div>
-          <div class="form-group" style="grid-column:1/-1;">
-            <label class="form-label" for="event-description">Description (optionnelle)</label>
-            <textarea id="event-description" class="form-textarea" rows="2" placeholder="Informations pour les invités..."></textarea>
-          </div>
-          <div style="grid-column:1/-1;">
-            <button type="submit" class="btn btn-primary">
-              ✨ Créer l'Événement & Générer le Code
-            </button>
-          </div>
+          <button type="submit" class="btn btn-primary">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 5v14M5 12h14"/>
+            </svg>
+            Créer l'événement
+          </button>
         </form>
       </div>
 
-      <!-- Section de gestion de photos (quand un événement est sélectionné) -->
-      <div id="manage-event-section" class="card" style="display:none; border-color:var(--accent-primary);">
+      <!-- ── Manage Event Section (hidden until event selected) ── -->
+      <div id="manage-event-section" class="card" style="display:none;">
         <div class="card-header">
           <div>
             <h2 class="card-title">
-              📷 Album : <span id="manage-event-title" style="color:var(--text-primary); font-weight:800;"></span>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                <circle cx="8.5" cy="8.5" r="1.5"/>
+                <path d="M21 15l-5-5L5 21"/>
+              </svg>
+              <span id="manage-event-title"></span>
             </h2>
-            <p style="color:var(--text-secondary); font-size:0.85rem; margin-top:4px;">
-              Code invité : <span id="manage-event-code" class="event-code-badge"></span>
-            </p>
+            <div class="event-meta" style="margin-top:0.25rem;">
+              <span>Code invité :</span>
+              <span id="manage-event-code" class="event-code-badge"></span>
+            </div>
           </div>
-          <span id="photographer-photo-count" style="color:var(--text-muted); font-size:0.9rem;">0 photo(s)</span>
+          <span id="photographer-photo-count" class="photo-counter">0 photo(s)</span>
         </div>
 
-        <!-- Zone de téléversement Drag & Drop -->
+        <!-- Dropzone -->
         <div id="photo-dropzone" class="dropzone">
-          <div class="dropzone-icon">☁️</div>
-          <h3 style="font-size:1.15rem; font-weight:700; margin-bottom:0.4rem;">
-            Glissez-déposez vos photos ici
-          </h3>
-          <p style="color:var(--text-secondary); font-size:0.9rem; margin-bottom:1rem;">
-            ou cliquez pour parcourir vos fichiers (formats JPEG, PNG acceptés)
-          </p>
+          <div class="dropzone-icon">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.6">
+              <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+              <polyline points="17 8 12 3 7 8"/>
+              <line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+          </div>
+          <h3 class="dropzone-title">Glissez vos photos ici</h3>
+          <p class="dropzone-hint">ou cliquez pour parcourir · JPEG, PNG</p>
           <button type="button" class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); document.getElementById('photo-file-input').click();">
-            📂 Parcourir les photos
+            Parcourir
           </button>
           <input type="file" id="photo-file-input" multiple accept="image/*" style="display:none;" />
         </div>
 
-        <!-- Barre de progression de l'upload -->
-        <div id="upload-progress-container" style="display:none; margin-top:1.5rem;">
-          <div style="display:flex; justify-content:space-between; font-size:0.85rem; margin-bottom:0.4rem;">
-            <span id="upload-progress-text" style="color:var(--text-secondary);">Envoi en cours...</span>
+        <!-- Upload Progress -->
+        <div id="upload-progress-container" class="progress-container" style="display:none;">
+          <div class="progress-header">
+            <span id="upload-progress-text" class="progress-text">Envoi en cours...</span>
           </div>
-          <div style="height:8px; background:rgba(255,255,255,0.1); border-radius:4px; overflow:hidden;">
-            <div id="upload-progress-bar" style="height:100%; width:0%; background:var(--accent-gradient); transition:width 0.3s ease;"></div>
+          <div class="progress-track">
+            <div id="upload-progress-bar" class="progress-bar"></div>
           </div>
         </div>
 
-        <!-- Galerie des photos du photographe -->
-        <h3 style="font-size:1.1rem; font-weight:700; margin:1.75rem 0 1rem 0;">Photos enregistrées</h3>
+        <!-- Photographer photos grid -->
+        <h3 class="section-title">Photos enregistrées</h3>
         <div id="photographer-photos-grid" class="gallery-grid"></div>
       </div>
 
-      <!-- Liste de tous les événements -->
+      <!-- ── All Events List ── -->
       <div class="card">
         <div class="card-header">
-          <h2 class="card-title">📁 Tous mes événements</h2>
-          <button class="btn btn-secondary btn-sm" onclick="loadEvents()">🔄 Rafraîchir</button>
+          <h2 class="card-title">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/>
+            </svg>
+            Mes événements
+          </h2>
+          <button class="btn btn-secondary btn-sm btn-icon" onclick="loadEvents()" title="Rafraîchir">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M23 4v6h-6M1 20v-6h6"/>
+              <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
+            </svg>
+          </button>
         </div>
         <div id="photographer-events-grid" class="events-grid"></div>
       </div>
 
     </section>
-
   </main>
 
 
-  <!-- ========================================== -->
-  <!-- MODAL : RECHERCHE PAR SELFIE (IA) -->
-  <!-- ========================================== -->
+  <!-- ============================================================
+       FOOTER
+       ============================================================ -->
+  <footer class="footer">
+    <p>EventFace · Propulsé par l'IA de reconnaissance faciale InsightFace ArcFace</p>
+  </footer>
+
+
+  <!-- ============================================================
+       SELFIE SEARCH MODAL
+       ============================================================ -->
   <div id="selfie-modal" class="modal-backdrop" style="display:none;">
     <div class="modal-content">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
-        <h2 style="font-size:1.35rem; font-weight:700; display:flex; align-items:center; gap:0.5rem;">
-          ✨ Trouver mes photos par IA
+
+      <!-- Modal Header -->
+      <div class="modal-header">
+        <h2>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"/>
+            <path d="M21 21l-4.35-4.35"/>
+          </svg>
+          Recherche par reconnaissance faciale
         </h2>
-        <button class="btn btn-secondary btn-sm" onclick="closeSelfieModal()">✖</button>
-      </div>
-
-      <div style="display:flex; gap:0.5rem; margin-bottom:1.25rem;">
-        <button class="btn btn-secondary btn-sm" style="flex:1;" onclick="switchSelfieMode('upload')">
-          📁 Importer un selfie
-        </button>
-        <button class="btn btn-secondary btn-sm" style="flex:1;" onclick="switchSelfieMode('camera')">
-          📷 Prendre avec la webcam
+        <button class="modal-close" onclick="closeSelfieModal()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 6L6 18M6 6l12 12"/>
+          </svg>
         </button>
       </div>
 
-      <!-- Mode 1 : Importer un selfie -->
-      <div id="selfie-upload-pane" style="text-align:center; padding:1.5rem; border:2px dashed var(--border-color); border-radius:var(--radius-md);">
-        <p style="font-size:2.5rem; margin-bottom:0.75rem;">🤳</p>
-        <p style="color:var(--text-secondary); font-size:0.9rem; margin-bottom:1.25rem;">
-          Importez une photo où votre visage est bien visible et éclairé.
-        </p>
-        <label class="btn btn-primary" style="cursor:pointer;">
-          Choisir une photo
-          <input type="file" accept="image/*" style="display:none;" onchange="handleSelfieFileSelected(this)" />
-        </label>
+      <!-- Mode Tabs (Upload / Webcam) -->
+      <div class="selfie-mode-tabs">
+        <button class="selfie-mode-tab active" onclick="switchSelfieMode('upload')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+          </svg>
+          Importer un selfie
+        </button>
+        <button class="selfie-mode-tab" onclick="switchSelfieMode('camera')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/>
+            <circle cx="12" cy="13" r="4"/>
+          </svg>
+          Webcam
+        </button>
       </div>
 
-      <!-- Mode 2 : Webcam directe -->
-      <div id="selfie-camera-pane" style="display:none; text-align:center;">
-        <div class="scanning-box" style="margin-bottom:1rem;">
-          <video id="webcam-video" class="video-preview" autoplay playsinline muted></video>
+      <!-- Upload mode pane -->
+      <div id="selfie-upload-pane" class="selfie-pane">
+        <div class="selfie-dropzone">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.5">
+            <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
+          </svg>
+          <p>Importez une photo avec votre visage bien visible</p>
+          <label class="btn btn-primary" style="cursor:pointer;">
+            Choisir une photo
+            <input type="file" accept="image/*" style="display:none;" onchange="handleSelfieFileSelected(this)" />
+          </label>
         </div>
-        <button class="btn btn-success" style="width:100%; justify-content:center; height:45px;" onclick="captureWebcamPhoto()">
-          📸 Capturer & Rechercher
+      </div>
+
+      <!-- Camera mode pane -->
+      <div id="selfie-camera-pane" class="selfie-pane" style="display:none;">
+        <div class="scanning-box">
+          <video id="webcam-video" class="video-preview" autoplay playsinline muted></video>
+          <div class="scan-laser"></div>
+        </div>
+        <button class="btn btn-success btn-lg" style="width:100%; margin-top:1rem;" onclick="captureWebcamPhoto()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/>
+            <circle cx="12" cy="13" r="4"/>
+          </svg>
+          Capturer &amp; Rechercher
         </button>
       </div>
 
-      <!-- Réglage du seuil de sensibilité -->
-      <div style="margin-top:1.5rem; padding-top:1.25rem; border-top:1px solid var(--border-color);">
-        <div style="display:flex; justify-content:space-between; font-size:0.85rem; color:var(--text-secondary); margin-bottom:0.4rem;">
-          <span>Sensibilité de reconnaissance :</span>
+      <!-- Threshold slider -->
+      <div class="threshold-control">
+        <div class="threshold-header">
+          <span>Sensibilité</span>
           <span id="threshold-val">Normale (45%)</span>
         </div>
-        <input 
-          type="range" 
-          id="selfie-threshold" 
-          min="0.30" 
-          max="0.75" 
-          step="0.05" 
-          value="0.45" 
-          style="width:100%; accent-color:var(--accent-primary);"
-          oninput="document.getElementById('threshold-val').innerText = (this.value < 0.40 ? 'Très tolérant' : this.value > 0.60 ? 'Strict' : 'Normale') + ' (' + Math.round(this.value * 100) + '%)'"
+        <input
+          type="range"
+          id="selfie-threshold"
+          class="threshold-slider"
+          min="0.30"
+          max="0.75"
+          step="0.05"
+          value="0.45"
+          oninput="document.getElementById('threshold-val').innerText = (this.value < 0.40 ? 'Très sensible' : this.value > 0.60 ? 'Strict' : 'Normale') + ' (' + Math.round(this.value * 100) + '%)'"
         />
       </div>
 
-      <!-- Animation de scan biométrique en cours -->
-      <div id="selfie-scanning-overlay" style="display:none; position:absolute; inset:0; background:rgba(19, 27, 46, 0.95); border-radius:var(--radius-lg); flex-direction:column; align-items:center; justify-content:center; z-index:10;">
-        <div style="font-size:3rem; margin-bottom:1rem; animation:pulse 1.5s infinite;">🔍</div>
-        <h3 style="font-size:1.2rem; font-weight:700; margin-bottom:0.5rem;">Analyse biométrique en cours...</h3>
-        <p style="color:var(--text-secondary); font-size:0.9rem;">Extraction du vecteur ArcFace 512D et comparaison vectorielle pgvector</p>
+      <!-- Scanning overlay -->
+      <div id="selfie-scanning-overlay" class="scanning-overlay" style="display:none;">
+        <div class="scanning-pulse">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"/>
+            <path d="M21 21l-4.35-4.35"/>
+          </svg>
+        </div>
+        <h3>Analyse biométrique...</h3>
+        <p>Extraction ArcFace 512D &amp; recherche vectorielle pgvector</p>
       </div>
 
     </div>
   </div>
 
 
-  <!-- ========================================== -->
-  <!-- MODAL : VISIONNEUSE PLEIN ÉCRAN (LIGHTBOX) -->
-  <!-- ========================================== -->
-  <div id="lightbox-modal" class="modal-backdrop" style="display:none;" onclick="closeLightbox()">
+  <!-- ============================================================
+       LIGHTBOX
+       ============================================================ -->
+  <div id="lightbox-modal" class="modal-backdrop lightbox-backdrop" style="display:none;" onclick="closeLightbox()">
+
+    <!-- Previous -->
+    <button class="lightbox-nav lightbox-prev" onclick="event.stopPropagation(); lightboxNav(-1)">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M15 18l-6-6 6-6"/>
+      </svg>
+    </button>
+
+    <!-- Image container -->
     <div class="lightbox-img-container" onclick="event.stopPropagation()">
-      <button class="lightbox-close" onclick="closeLightbox()">✖</button>
-      <img id="lightbox-image" class="lightbox-img" src="" alt="Photo plein écran" />
-      
-      <div style="position:absolute; bottom:20px; display:flex; gap:1rem; align-items:center;">
-        <button class="btn btn-secondary btn-sm" onclick="lightboxNav(-1)">◀ Précédente</button>
-        <a id="lightbox-download-btn" class="btn btn-primary btn-sm" href="" download>⬇️ Télécharger HD</a>
-        <button class="btn btn-secondary btn-sm" onclick="lightboxNav(1)">Suivante ▶</button>
+      <button class="lightbox-close" onclick="closeLightbox()">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M18 6L6 18M6 6l12 12"/>
+        </svg>
+      </button>
+      <img id="lightbox-image" class="lightbox-img" src="" alt="Photo" />
+      <div class="lightbox-toolbar">
+        <a id="lightbox-download-btn" class="btn btn-primary btn-sm" href="" download>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+          </svg>
+          Télécharger HD
+        </a>
       </div>
     </div>
+
+    <!-- Next -->
+    <button class="lightbox-nav lightbox-next" onclick="event.stopPropagation(); lightboxNav(1)">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M9 18l6-6-6-6"/>
+      </svg>
+    </button>
+
   </div>
 
+
+  <!-- ============================================================
+       APPLICATION SCRIPT
+       ============================================================ -->
   <script src="js/app.js"></script>
+
 </body>
 </html>

@@ -29,6 +29,7 @@ spring:
 
 minio:
   endpoint: ${MINIO_ENDPOINT:http://localhost:9000}
+  public-endpoint: ${MINIO_PUBLIC_ENDPOINT:${minio.endpoint}}
   access-key: ${MINIO_ACCESS_KEY:minioadmin}
   secret-key: ${MINIO_SECRET_KEY:minioadminpassword}
   bucket: ${MINIO_BUCKET:photos}
