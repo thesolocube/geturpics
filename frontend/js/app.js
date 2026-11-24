@@ -3,10 +3,8 @@
  * Architecture : Spring Boot (8081) + MinIO (9000) + Worker IA (5001) + PostgreSQL pgvector
  */
 
-// Détection automatique de l'hôte API (supporte direct port 3000 -> 8081 ou proxy/same origin)
-const API_BASE = window.location.port === "8081" 
-  ? "/api/v1" 
-  : `${window.location.protocol}//${window.location.hostname}:8081/api/v1`;
+// API relative (proxy Nginx sur port 3000 ou Spring Boot sur port 8081)
+const API_BASE = "/api/v1";
 
 const PHOTOGRAPHER_ID = "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11";
 
