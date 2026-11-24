@@ -132,7 +132,7 @@ public class PhotoService {
     @Transactional(readOnly = true)
     public List<PhotoDetailDto> getPhotosByEvent(UUID eventId) {
         eventService.getEventEntityById(eventId);
-        List<Photo> photos = photoRepository.findByEventIdAndStatusOrderByCreatedAtDesc(eventId, Photo.STATUS_PROCESSED);
+        List<Photo> photos = photoRepository.findByEventIdOrderByCreatedAtDesc(eventId);
 
         return photos.stream()
                 .map(this::mapToDetailDto)

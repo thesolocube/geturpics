@@ -14,6 +14,8 @@ public interface PhotoRepository extends JpaRepository<Photo, UUID> {
 
     List<Photo> findByEventId(UUID eventId);
 
+    List<Photo> findByEventIdOrderByCreatedAtDesc(UUID eventId);
+
     List<Photo> findByEventIdAndStatusOrderByCreatedAtDesc(UUID eventId, String status);
 
     /**

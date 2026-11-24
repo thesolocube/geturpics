@@ -1,9 +1,16 @@
 server:
   port: ${SERVER_PORT:8081}
+  error:
+    include-message: always
 
 spring:
   application:
     name: eventface-backend
+
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 50MB
 
   datasource:
     # Par defaut 5433 pour correspondre au port hote Docker (ou 5432 si DB locale)

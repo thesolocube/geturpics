@@ -1,6 +1,6 @@
 /**
  * EventFace — Premium Application Logic
- * Architecture : Spring Boot (8081) + MinIO (9000) + Worker AI (5001) + PostgreSQL pgvector
+ * Architecture : Spring Boot (8081) + MinIO (9000) + Worker IA (5001) + PostgreSQL pgvector
  */
 
 // Détection automatique de l'hôte API (supporte direct port 3000 -> 8081 ou proxy/same origin)
@@ -21,13 +21,14 @@ const state = {
   searchResults: null,
   isSearching: false,
   lightboxIndex: 0,
-  webcamStream: null
+  webcamStream: null,
+  photoPollTimer: null
 };
 
 /* ==========================================================================
    1. SYSTÈME DE NOTIFICATIONS TOAST (UI Moderne sans alert())
    ========================================================================== */
-function showToast(message, type = 'info', duration = 4000) {
+function showToast(message, type = 'info', duration = 4500) {
   let container = document.getElementById('toast-container');
   if (!container) {
     container = document.createElement('div');
@@ -256,24 +257,39 @@ async function selectPhotographerEvent(eventId) {
 }
 
 async function loadPhotographerPhotos(eventId) {
+  if (state.photoPollTimer) {
+    clearTimeout(state.photoPollTimer);
+    state.photoPollTimer = null;
+  }
+
   const grid = document.getElementById('photographer-photos-grid');
   const countEl = document.getElementById('photographer-photo-count');
-
-  if (grid) {
-    grid.innerHTML = `
-      <div class="skeleton-item"></div>
-      <div class="skeleton-item"></div>
-      <div class="skeleton-item"></div>
-      <div class="skeleton-item"></div>`;
-  }
 
   try {
     const res = await fetch(`${API_BASE}/photos/events/${eventId}`);
     if (!res.ok) throw new Error("Erreur de récupération des photos");
     const photos = await res.json();
     state.photos = photos;
-    if (countEl) countEl.innerText = `${photos.length} photo(s)`;
+
+    const processedCount = photos.filter(p => p.status === 'PROCESSED').length;
+    const pendingCount = photos.filter(p => p.status === 'PENDING' || p.status === 'UPLOADING').length;
+
+    if (countEl) {
+      if (pendingCount > 0) {
+        countEl.innerHTML = `<span style="color:#f59e0b;"><span class="spinner" style="width:10px;height:10px;"></span> ${photos.length} photo(s) (${processedCount} prête(s), ${pendingCount} en cours...)</span>`;
+      } else {
+        countEl.innerText = `${photos.length} photo(s)`;
+      }
+    }
+
     renderPhotographerPhotos(photos);
+
+    // Si des photos sont encore en cours de traitement par l'IA, rafraîchir automatiquement dans 2.5 secondes
+    if (pendingCount > 0 && state.selectedEvent && state.selectedEvent.id === eventId) {
+      state.photoPollTimer = setTimeout(() => {
+        loadPhotographerPhotos(eventId);
+      }, 2500);
+    }
   } catch (err) {
     if (grid) grid.innerHTML = `<p style="color:var(--danger); grid-column:1/-1;">Erreur: ${err.message}</p>`;
   }
@@ -292,26 +308,33 @@ function renderPhotographerPhotos(photos) {
     return;
   }
 
-  grid.innerHTML = photos.map(p => `
-    <div class="photo-item" onclick="openLightboxDirect('${p.id}')">
-      <img class="photo-img" src="${API_BASE}/photos/${p.id}/thumbnail" loading="lazy" alt="Photo"
-           onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'100\\' height=\\'100\\'><rect width=\\'100\\' height=\\'100\\' fill=\\'%231e293b\\'/><text x=\\'50%\\' y=\\'50%\\' dominant-baseline=\\'middle\\' text-anchor=\\'middle\\' fill=\\'%2394a3b8\\' font-size=\\'12\\'>Non dispo</text></svg>'"/>
-      <div class="photo-overlay">
-        <div>
-          <span class="badge" style="background:rgba(0,0,0,0.7); backdrop-filter:blur(4px);">
-            ${p.width || '?'}×${p.height || '?'}
-          </span>
-        </div>
-        <div style="display:flex; justify-content:space-between; align-items:center; width:100%;">
-          <span style="font-size:0.75rem; color:#10b981; font-weight:600;">✓ IA Traité</span>
-          <a href="${API_BASE}/photos/${p.id}/download" class="btn btn-secondary btn-sm btn-icon" 
-             onclick="event.stopPropagation();" title="Télécharger HD" download>
-            ⬇
-          </a>
+  grid.innerHTML = photos.map(p => {
+    const isPending = (p.status === 'PENDING' || p.status === 'UPLOADING');
+    const statusBadge = isPending
+      ? `<span style="font-size:0.75rem; color:#f59e0b; font-weight:600;"><span class="spinner" style="width:10px;height:10px;margin-right:4px;"></span>Traitement IA...</span>`
+      : `<span style="font-size:0.75rem; color:#10b981; font-weight:600;">✓ IA Traité</span>`;
+
+    return `
+      <div class="photo-item ${isPending ? 'photo-pending' : ''}" onclick="openLightboxDirect('${p.id}')">
+        <img class="photo-img" src="${API_BASE}/photos/${p.id}/thumbnail" loading="lazy" alt="Photo"
+             onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'100\\' height=\\'100\\'><rect width=\\'100\\' height=\\'100\\' fill=\\'%231e293b\\'/><text x=\\'50%\\' y=\\'50%\\' dominant-baseline=\\'middle\\' text-anchor=\\'middle\\' fill=\\'%2394a3b8\\' font-size=\\'12\\'>Non dispo</text></svg>'"/>
+        <div class="photo-overlay">
+          <div>
+            <span class="badge" style="background:rgba(0,0,0,0.7); backdrop-filter:blur(4px);">
+              ${p.width ? `${p.width}×${p.height}` : 'En cours'}
+            </span>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center; width:100%;">
+            ${statusBadge}
+            <a href="${API_BASE}/photos/${p.id}/download" class="btn btn-secondary btn-sm btn-icon" 
+               onclick="event.stopPropagation();" title="Télécharger HD" download>
+              ⬇
+            </a>
+          </div>
         </div>
       </div>
-    </div>
-  `).join('');
+    `;
+  }).join('');
 }
 
 /* ==========================================================================
@@ -342,19 +365,27 @@ function setupDropzone() {
   });
 
   fileInput.addEventListener('change', () => {
-    if (fileInput.files.length > 0) handleFilesUpload(fileInput.files);
+    if (fileInput.files.length > 0) {
+      handleFilesUpload(fileInput.files);
+      fileInput.value = ''; // Reset pour permettre de re-sélectionner
+    }
   });
 }
 
 async function handleFilesUpload(fileList) {
   if (!state.selectedEvent) {
-    showToast("Veuillez d'abord sélectionner un événement.", "error");
+    showToast("Veuillez d'abord sélectionner ou créer un événement.", "error");
     return;
   }
 
-  const files = Array.from(fileList).filter(f => f.type.startsWith('image/'));
+  // Filtrage robuste : mime-type OU extension d'image
+  const files = Array.from(fileList).filter(f => 
+    (f.type && f.type.startsWith('image/')) || 
+    /\.(jpe?g|png|webp|bmp|gif|heic)$/i.test(f.name)
+  );
+
   if (files.length === 0) {
-    showToast("Veuillez sélectionner des images (JPEG, PNG).", "error");
+    showToast("Veuillez sélectionner des images valides (JPEG, PNG).", "error");
     return;
   }
 
@@ -364,8 +395,11 @@ async function handleFilesUpload(fileList) {
   progressContainer.style.display = 'block';
 
   let completed = 0;
-  for (const file of files) {
-    progressText.innerText = `Envoi de ${file.name} (${completed + 1}/${files.length})...`;
+  let errors = 0;
+
+  for (let i = 0; i < files.length; i++) {
+    const file = files[i];
+    progressText.innerText = `Envoi [${i + 1}/${files.length}] : ${file.name}...`;
 
     try {
       // 1. Demande d'URL pré-signée PUT
@@ -379,10 +413,10 @@ async function handleFilesUpload(fileList) {
         })
       });
 
-      if (!urlRes.ok) throw new Error("Erreur URL pré-signée MinIO");
+      if (!urlRes.ok) throw new Error(`Erreur génération URL (${urlRes.status})`);
       const { photoId, uploadUrl } = await urlRes.json();
 
-      // Remplacement si docker utilise minio:9000
+      // Ajustement domaine pour Docker si nécessaire
       let directUploadUrl = uploadUrl;
       if (directUploadUrl.includes("http://minio:9000")) {
         directUploadUrl = directUploadUrl.replace("http://minio:9000", `${window.location.protocol}//${window.location.hostname}:9000`);
@@ -395,7 +429,7 @@ async function handleFilesUpload(fileList) {
         body: file
       });
 
-      if (!putRes.ok) throw new Error("Échec upload binaire vers MinIO");
+      if (!putRes.ok) throw new Error(`Échec envoi vers MinIO (${putRes.status})`);
 
       // 3. Confirmation backend (déclenche RabbitMQ -> IA Worker)
       await fetch(`${API_BASE}/photos/confirm`, {
@@ -405,25 +439,29 @@ async function handleFilesUpload(fileList) {
       });
 
       completed++;
-      const percent = Math.round((completed / files.length) * 100);
-      progressBar.style.width = `${percent}%`;
     } catch (err) {
       console.error(`Erreur upload pour ${file.name}:`, err);
+      errors++;
     }
+
+    const percent = Math.round(((i + 1) / files.length) * 100);
+    progressBar.style.width = `${percent}%`;
   }
 
-  progressText.innerText = `✅ ${completed} photo(s) envoyée(s) ! Traitement par l'IA en cours...`;
-  showToast(`✅ ${completed} photo(s) uploadée(s) ! L'IA détecte les visages...`, "success");
+  if (errors > 0) {
+    showToast(`⚠️ ${completed} photo(s) envoyée(s), ${errors} erreur(s).`, "error");
+  } else {
+    showToast(`✅ ${completed}/${files.length} photo(s) envoyée(s) ! Traitement IA en arrière-plan...`, "success", 5000);
+  }
 
+  progressText.innerText = `✅ Envoi terminé (${completed}/${files.length}). Traitement par l'IA...`;
   setTimeout(() => {
     progressContainer.style.display = 'none';
     progressBar.style.width = '0%';
-  }, 4500);
+  }, 4000);
 
-  // Rafraîchir les photos après quelques secondes
-  setTimeout(() => {
-    if (state.selectedEvent) loadPhotographerPhotos(state.selectedEvent.id);
-  }, 3500);
+  // Recharger immédiatement la galerie du photographe
+  await loadPhotographerPhotos(state.selectedEvent.id);
 }
 
 /* ==========================================================================
@@ -510,7 +548,10 @@ async function loadGuestGallery(eventId) {
   try {
     const res = await fetch(`${API_BASE}/photos/events/${eventId}`);
     if (!res.ok) throw new Error("Impossible de charger la galerie");
-    state.photos = await res.json();
+    const allPhotos = await res.json();
+    
+    // Pour les invités, n'afficher que les photos prêtes (PROCESSED)
+    state.photos = allPhotos.filter(p => p.status === 'PROCESSED');
     state.activeGalleryList = state.photos;
     state.selectedPhotoIds.clear();
     updateSelectionBar();
@@ -533,7 +574,7 @@ function renderGuestGallery(photos, isSearchResult = false) {
         <div class="empty-state" style="grid-column:1/-1;">
           <div class="empty-icon">🔍</div>
           <h3>Aucune photo trouvée avec ce visage</h3>
-          <p>Essayez avec un autre selfie sous un meilleur angle ou réduisez la sensibilité.</p>
+          <p>Essayez avec un autre selfie sous un meilleur angle ou réduisez la sensibilité avec le curseur.</p>
           <button class="btn btn-secondary" style="margin-top:1rem;" onclick="resetGuestSearch()">
             Voir tout l'album
           </button>
@@ -543,8 +584,8 @@ function renderGuestGallery(photos, isSearchResult = false) {
       grid.innerHTML = `
         <div class="empty-state" style="grid-column:1/-1;">
           <div class="empty-icon">📷</div>
-          <h3>Aucune photo pour l'instant</h3>
-          <p>Le photographe n'a pas encore ajouté de photos dans cet album.</p>
+          <h3>Aucune photo prête pour l'instant</h3>
+          <p>Le photographe ajoute actuellement des photos ou elles sont en cours de traitement par l'IA.</p>
         </div>
       `;
     }
@@ -672,17 +713,57 @@ function captureWebcamPhoto() {
 
   canvas.toBlob(blob => {
     if (blob) executeSelfieSearch(blob);
-  }, 'image/jpeg', 0.95);
+  }, 'image/jpeg', 0.90);
 }
 
 function handleSelfieFileSelected(input) {
   if (input.files && input.files[0]) {
     executeSelfieSearch(input.files[0]);
+    input.value = ''; // Permet de re-sélectionner
   }
 }
 
+/**
+ * Redimensionne une image côté client pour éviter tout dépassement de taille et accélérer l'IA
+ */
+async function optimizeSelfieImage(fileOrBlob, maxDim = 1200) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    const url = URL.createObjectURL(fileOrBlob);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      let { width, height } = img;
+      if (width > maxDim || height > maxDim) {
+        if (width > height) {
+          height = Math.round((height * maxDim) / width);
+          width = maxDim;
+        } else {
+          width = Math.round((width * maxDim) / height);
+          height = maxDim;
+        }
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, width, height);
+      canvas.toBlob((blob) => {
+        resolve(blob || fileOrBlob);
+      }, 'image/jpeg', 0.88);
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      resolve(fileOrBlob);
+    };
+    img.src = url;
+  });
+}
+
 async function executeSelfieSearch(fileOrBlob) {
-  if (!state.selectedEvent) return;
+  if (!state.selectedEvent) {
+    showToast("Veuillez d'abord rejoindre un événement.", "error");
+    return;
+  }
 
   const thresholdInput = document.getElementById('selfie-threshold');
   const threshold = thresholdInput ? thresholdInput.value : "0.45";
@@ -690,11 +771,14 @@ async function executeSelfieSearch(fileOrBlob) {
   const scanningOverlay = document.getElementById('selfie-scanning-overlay');
   if (scanningOverlay) scanningOverlay.style.display = 'flex';
 
-  const formData = new FormData();
-  formData.append('selfie', fileOrBlob, 'selfie.jpg');
-  formData.append('threshold', threshold);
-
   try {
+    // Optimisation automatique de l'image (max 1200px)
+    const optimizedBlob = await optimizeSelfieImage(fileOrBlob);
+
+    const formData = new FormData();
+    formData.append('selfie', optimizedBlob, 'selfie.jpg');
+    formData.append('threshold', threshold);
+
     const res = await fetch(`${API_BASE}/photos/events/${state.selectedEvent.id}/search-by-selfie`, {
       method: 'POST',
       body: formData
@@ -705,7 +789,8 @@ async function executeSelfieSearch(fileOrBlob) {
 
     if (!res.ok) {
       const errData = await res.json().catch(() => ({}));
-      showToast(errData.message || "Aucun visage détecté sur ce selfie.", "error");
+      const msg = errData.message || "Aucun visage détecté sur cette photo. Essayez avec un selfie plus net et bien éclairé.";
+      showToast(`🔍 ${msg}`, "error", 6000);
       return;
     }
 
@@ -717,10 +802,19 @@ async function executeSelfieSearch(fileOrBlob) {
     const textEl = document.getElementById('search-matches-text');
 
     if (banner) banner.style.display = 'flex';
-    if (textEl) textEl.innerText = `✨ ${matches.length} photo(s) trouvée(s) avec votre visage !`;
+    if (textEl) {
+      textEl.innerText = matches.length > 0
+        ? `✨ ${matches.length} photo(s) trouvée(s) où vous apparaissez !`
+        : `🔍 Aucune correspondance trouvée avec ce visage`;
+    }
 
     renderGuestGallery(matches, true);
-    showToast(`🎯 L'IA a trouvé ${matches.length} photo(s) correspondante(s) !`, "success");
+
+    if (matches.length > 0) {
+      showToast(`🎯 L'IA a trouvé ${matches.length} photo(s) correspondante(s) !`, "success");
+    } else {
+      showToast(`Aucune photo trouvée. Essayez de réduire le seuil de sensibilité ou avec un autre selfie.`, "info", 6000);
+    }
   } catch (err) {
     if (scanningOverlay) scanningOverlay.style.display = 'none';
     showToast("Erreur lors de la recherche : " + err.message, "error");
